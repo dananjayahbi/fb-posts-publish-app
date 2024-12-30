@@ -11,7 +11,7 @@ const PostCard = ({ post, onAccept, onReject }) => {
       <Button type="primary" onClick={onAccept} style={{ marginRight: 8 }}>
         Accept
       </Button>
-      <Button type="danger" onClick={onReject}>
+      <Button danger onClick={onReject}>
         Reject
       </Button>
     </Card>

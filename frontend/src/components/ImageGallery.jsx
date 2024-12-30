@@ -44,9 +44,13 @@ const ImageGallery = ({ posts, actions }) => {
                   actions.map((action, index) => (
                     <Button
                       key={index}
-                      type={action.type}
+                      type={action.type === "primary" ? "primary" : undefined}
+                      danger={action.type === "danger"}
                       onClick={() => action.onClick(post)}
-                      style={{ marginBottom: 8 }}
+                      style={{
+                        marginBottom: 8,
+                        marginLeft: action.type === "danger" ? 10 : 0,
+                      }}
                     >
                       {action.label}
                     </Button>

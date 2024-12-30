@@ -8,7 +8,7 @@ const { TabPane } = Tabs;
 
 const Dashboard = () => {
   return (
-    <Tabs defaultActiveKey="1">
+    <Tabs defaultActiveKey="1" style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
       <TabPane tab="Drafts" key="1">
         <Drafts />
       </TabPane>
