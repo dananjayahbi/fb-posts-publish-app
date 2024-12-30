@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Tabs } from "antd";
 import Drafts from "../components/Drafts";
 import ToBePublished from "../components/ToBePublished";

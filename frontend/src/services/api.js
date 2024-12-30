@@ -40,6 +40,18 @@ const api = {
     const response = await axios.get(`${apiBase}/published`);
     return response.data;
   },
+  getCredentials: async () => {
+    const response = await axios.get(`${apiBase}/credentials`);
+    return response.data;
+  },
+  updateCredentials: async (data) => {
+    const response = await axios.post(`${apiBase}/update-credentials`, data);
+    return response.data;
+  },
+  deletePublishedPost: async (id) => {
+    const response = await axios.delete(`${apiBase}/published/${id}`);
+    return response.data;
+  },  
 };
 
 export default api;
