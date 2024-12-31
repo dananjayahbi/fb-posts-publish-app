@@ -56,8 +56,20 @@ const ToBePublished = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, textAlign: "right", display: "flex", justifyContent: "center" }}>
-        <Button type="primary" onClick={() => navigate("/credentials")} disabled={loading}>
+      <div
+        style={{
+          marginBottom: 16,
+          textAlign: "right",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <Button
+          type="primary"
+          onClick={() => navigate("/credentials")}
+          disabled={loading}
+          style={{ marginRight: "100px" }}
+        >
           Update Credentials
         </Button>
       </div>
