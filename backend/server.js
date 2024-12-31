@@ -39,12 +39,19 @@ app.use((req, res, next) => {
   }
 });
 
-wss.on('connection', (ws, req) => {
-  console.log('WebSocket connection established');
-  console.log('Headers:', req.headers); // Debug request headers
-  ws.on('message', (message) => {
-      console.log('Received message:', message);
-      ws.send(`Echo: ${message}`);
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+
+  // Send a heartbeat to the client every 5 seconds
+  const interval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ status: "online" }));
+    }
+  }, 5000);
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+    clearInterval(interval);
   });
 });
 
