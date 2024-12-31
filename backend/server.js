@@ -248,7 +248,7 @@ app.delete("/to-be-published/:id", (req, res) => {
 app.delete("/published/:id", (req, res) => {
   const { id } = req.params;
   const data = getPostsData();
-  const postIndex = data.published.findIndex((post) => post.facebookPostId === id);
+  const postIndex = data.published.findIndex((post) => post.id === id);
 
   if (postIndex === -1) return res.status(404).send("Post not found.");
 

@@ -61,7 +61,15 @@ const Drafts = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, textAlign: "right", display: "flex", justifyContent: "center" }}>
+      <div
+        style={{
+          marginBottom: 16,
+          textAlign: "right",
+          display: "flex",
+          justifyContent: "center",
+          marginRight: "100px",
+        }}
+      >
         <Button type="primary" onClick={handleSync}>
           Sync Drafts
         </Button>
