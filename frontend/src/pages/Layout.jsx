@@ -1,23 +1,60 @@
-import React from "react";
-import { Layout, Menu } from "antd";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import CustomSideNav from "../components/CustomSideNav";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { Layout as AntLayout } from "antd";
 
-const { Header, Content, Footer } = Layout;
+const { Content, Sider } = AntLayout;
 
-const AppLayout = ({ children }) => {
+const Layout = ({ children }) => {
+  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowHeight(window.innerHeight);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   return (
-    <Layout>
-      <Header>
-        <Menu theme="dark" mode="horizontal" defaultSelectedKeys={["1"]}>
-          <Menu.Item key="1">
-            <Link to="/">Dashboard</Link>
-          </Menu.Item>
-        </Menu>
-      </Header>
-      <Content style={{ padding: "20px" }}>{children}</Content>
-      <Footer style={{ textAlign: "center" }}>Post Manager ©2024</Footer>
-    </Layout>
+    <AntLayout style={{ minHeight: "100vh" }}>
+      <Header />
+      <AntLayout
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          marginLeft: "20px",
+        }}
+      >
+        <Sider
+          width={80} // Set the width to match the custom sidebar design
+          style={{
+            height: "250px",
+            backgroundColor: "#cadaff",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingTop: "15px",
+            borderRadius: "50px",
+            marginTop: (windowHeight - 250) / 2, // Center the Sider vertically
+            boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <CustomSideNav />
+        </Sider>
+        <AntLayout>
+          <Content style={{ padding: "20px", marginBottom: "60px" }}>
+            {children}
+          </Content>
+        </AntLayout>
+      </AntLayout>
+      <Footer />
+    </AntLayout>
   );
 };
 
-export default AppLayout;
+export default Layout;

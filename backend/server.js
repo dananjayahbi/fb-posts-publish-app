@@ -1,10 +1,12 @@
 const express = require("express");
+const FormData = require("form-data");
 const fs = require("fs-extra");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const bodyParser = require("body-parser");
 const axios = require("axios");
 const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 const PORT = 3000;
@@ -17,6 +19,8 @@ const TO_BE_PUBLISHED_DIR = path.join(POSTS_DIR, "to-be-published");
 const PUBLISHED_DIR = path.join(POSTS_DIR, "published");
 const DATA_FILE = path.join(__dirname, "data/posts.json");
 const POSTS_FOLDER = path.join(__dirname, "../posts"); // Path to "posts" folder
+const FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
+const FACEBOOK_PAGE_ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
 
 // Serve the posts-management folder as static
 app.use("/images", express.static(POSTS_DIR));
@@ -46,6 +50,38 @@ const getPostsData = () => {
   }
 };
 const savePostsData = (data) => fs.writeJsonSync(DATA_FILE, data);
+
+// Endpoint to fetch current credentials
+app.get("/credentials", (req, res) => {
+  const credentials = {
+    pageId: process.env.FACEBOOK_PAGE_ID || "",
+    accessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "",
+  };
+  res.json(credentials);
+});
+
+// Endpoint to update credentials
+app.post("/update-credentials", (req, res) => {
+  const { pageId, accessToken } = req.body;
+
+  if (!pageId || !accessToken) {
+    return res.status(400).send("Both Page ID and Access Token are required.");
+  }
+
+  // Update .env file
+  const envFilePath = path.join(__dirname, ".env");
+  const envContent = `FACEBOOK_PAGE_ID=${pageId}\nFACEBOOK_PAGE_ACCESS_TOKEN=${accessToken}`;
+  try {
+    fs.writeFileSync(envFilePath, envContent);
+    // Reload environment variables
+    process.env.FACEBOOK_PAGE_ID = pageId;
+    process.env.FACEBOOK_PAGE_ACCESS_TOKEN = accessToken;
+    res.send("Credentials updated successfully.");
+  } catch (error) {
+    console.error("Error updating credentials:", error.message);
+    res.status(500).send("Failed to update credentials.");
+  }
+});
 
 // Sync posts from "../posts" to drafts
 app.post("/sync-drafts", (req, res) => {
@@ -87,7 +123,7 @@ app.post("/accept-post", (req, res) => {
 
   const postId = uuidv4();
   const imageUrl = `http://localhost:${PORT}/images/drafts/${fileName}`;
-  const publishUrl = `https://graph.facebook.com/v21.0/{page_id}/photos?url=${imageUrl}&caption=${caption}&access_token={access_token}`;
+  const publishUrl = `https://graph.facebook.com/v21.0/${FACEBOOK_PAGE_ID}/photos?url=${imageUrl}&caption=${caption}&access_token=${FACEBOOK_PAGE_ACCESS_TOKEN}`;
 
   fs.moveSync(draftPath, publishPath, { overwrite: true });
 
@@ -126,35 +162,67 @@ app.post("/publish-post", async (req, res) => {
   const data = getPostsData();
   const postIndex = data.toBePublished.findIndex((post) => post.id === id);
 
-  if (postIndex === -1) return res.status(404).send("Post not found.");
+  if (postIndex === -1) {
+    return res.status(404).send("Post not found.");
+  }
 
   const post = data.toBePublished[postIndex];
+  const filePath = path.join(TO_BE_PUBLISHED_DIR, post.fileName);
+
   try {
-    const response = await axios.post(post.publishUrl);
+    // Create a FormData object and append required fields
+    const formData = new FormData();
+    formData.append("source", fs.createReadStream(filePath)); // Image file
+    formData.append("caption", post.caption); // Post caption
+    formData.append("access_token", process.env.FACEBOOK_PAGE_ACCESS_TOKEN); // Facebook access token
+
+    // Post the FormData to Facebook Graph API
+    const response = await axios.post(
+      `https://graph.facebook.com/v21.0/${process.env.FACEBOOK_PAGE_ID}/photos`,
+      formData,
+      { headers: formData.getHeaders() }
+    );
+
+    // Move the file to the published folder after successful posting
     const publishedPath = path.join(PUBLISHED_DIR, post.fileName);
-    const toBePublishedPath = path.join(TO_BE_PUBLISHED_DIR, post.fileName);
 
-    fs.moveSync(toBePublishedPath, publishedPath, { overwrite: true });
+    fs.moveSync(filePath, publishedPath, { overwrite: true });
 
+    // Update the JSON data
     data.toBePublished.splice(postIndex, 1);
     data.published.push({
       ...post,
       facebookPostId: response.data.id,
-      imageUrl: `http://localhost:${PORT}/images/published/${post.fileName}`,
       publishedAt: new Date().toISOString(),
     });
 
     savePostsData(data);
     res.send("Post published successfully.");
   } catch (error) {
-    res.status(500).send("Error publishing post.");
+    const fbError = error.response?.data?.error;
+
+    // Handle Facebook API-specific errors
+    if (fbError && fbError.code === 190 && fbError.error_subcode === 463) {
+      console.error("Access Token Error:", fbError.message);
+      res.status(400).send("Page access token expired.");
+    } else if (fbError) {
+      console.error("Facebook API Error:", fbError.message);
+      res.status(500).send(fbError.error_user_msg || "Error publishing post.");
+    } else {
+      console.error("Unknown Error:", error.message);
+      res.status(500).send("An unexpected error occurred.");
+    }
   }
 });
 
 // Get published posts
 app.get("/published", (req, res) => {
   const data = getPostsData();
-  res.json(data.published);
+  const published = data.published.map((post) => ({
+    ...post,
+    path: `http://localhost:${PORT}/images/published/${post.fileName}`, // Ensure the path matches the published folder
+  }));
+  res.json(published);
 });
 
 // Delete a to-be-published post
@@ -174,6 +242,32 @@ app.delete("/to-be-published/:id", (req, res) => {
   savePostsData(data);
 
   res.send("Post deleted successfully.");
+});
+
+// Delete a published post from the backend
+app.delete("/published/:id", (req, res) => {
+  const { id } = req.params;
+  const data = getPostsData();
+  const postIndex = data.published.findIndex((post) => post.id === id);
+
+  if (postIndex === -1) return res.status(404).send("Post not found.");
+
+  const post = data.published[postIndex];
+  const publishedPath = path.join(PUBLISHED_DIR, post.fileName);
+
+  try {
+    // Delete the image file
+    fs.removeSync(publishedPath);
+
+    // Remove from JSON database
+    data.published.splice(postIndex, 1);
+    savePostsData(data);
+
+    res.send("Post deleted successfully.");
+  } catch (error) {
+    console.error("Error deleting post:", error.message);
+    res.status(500).send("Error deleting post.");
+  }
 });
 
 // Start Server
