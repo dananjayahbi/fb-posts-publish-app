@@ -40,7 +40,7 @@ const Layout = ({ children }) => {
             alignItems: "center",
             paddingTop: "15px",
             borderRadius: "50px",
-            marginTop: (windowHeight - 250) / 2, // Center the Sider vertically
+            marginTop: (windowHeight - 450) / 2, // Center the Sider vertically
             boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
           }}
         >

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { message, Modal } from "antd";
+import { message, Modal, Empty } from "antd";
 import ImageGallery from "./ImageGallery";
 import api from "../services/api";
 
@@ -43,19 +43,23 @@ const Published = () => {
 
   return (
     <div>
-      <ImageGallery
-        posts={posts.map((post) => ({
-          ...post,
-          additionalInfo: `Post ID: ${post.facebookPostId || "N/A"}`, // Show Post ID if available
-        }))}
-        actions={[
-          {
-            label: "Delete",
-            type: "danger",
-            onClick: handleDeleteClick,
-          },
-        ]}
-      />
+      {posts.length > 0 ? (
+        <ImageGallery
+          posts={posts.map((post) => ({
+            ...post,
+            additionalInfo: `Post ID: ${post.facebookPostId || "N/A"}`, // Show Post ID if available
+          }))}
+          actions={[
+            {
+              label: "Delete",
+              type: "danger",
+              onClick: handleDeleteClick,
+            },
+          ]}
+        />
+      ) : (
+        <Empty style={{marginRight: "110px"}} description="No published posts available" />
+      )}
       <Modal
         visible={isModalVisible}
         title="Confirm Deletion"

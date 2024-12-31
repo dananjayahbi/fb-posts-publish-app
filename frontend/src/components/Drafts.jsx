@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { message, Modal, Input, Button } from "antd";
+import { message, Modal, Input, Button, Empty } from "antd";
 import ImageGallery from "./ImageGallery";
 import api from "../services/api";
 
@@ -74,13 +74,17 @@ const Drafts = () => {
           Sync Drafts
         </Button>
       </div>
-      <ImageGallery
-        posts={posts}
-        actions={[
-          { label: "Accept", type: "primary", onClick: handleAccept },
-          { label: "Reject", type: "danger", onClick: handleReject },
-        ]}
-      />
+      {posts.length > 0 ? (
+        <ImageGallery
+          posts={posts}
+          actions={[
+            { label: "Accept", type: "primary", onClick: handleAccept },
+            { label: "Reject", type: "danger", onClick: handleReject },
+          ]}
+        />
+      ) : (
+        <Empty style={{marginRight: "110px"}} description="No drafts available" />
+      )}
       <Modal
         visible={modalVisible}
         onCancel={() => setModalVisible(false)}
