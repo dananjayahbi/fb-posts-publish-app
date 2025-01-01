@@ -1,16 +1,21 @@
 const express = require("express");
 const FormData = require("form-data");
+const http = require('http');
 const fs = require("fs-extra");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const bodyParser = require("body-parser");
 const axios = require("axios");
 const cors = require("cors");
+const WebSocket = require('ws');
 require("dotenv").config();
 
 const app = express();
-const PORT = 3000;
 app.use(cors());
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+const PORT = 3000;
 
 // Folders
 const POSTS_DIR = path.join(__dirname, "posts-management");
@@ -26,7 +31,29 @@ const FACEBOOK_PAGE_ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
 app.use("/images", express.static(POSTS_DIR));
 
 // Middleware
-app.use(bodyParser.json());
+app.use((req, res, next) => {
+  if (req.headers.upgrade === 'websocket') {
+      next();
+  } else {
+      bodyParser.json()(req, res, next); // Apply middleware only for non-WebSocket routes
+  }
+});
+
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+
+  // Send a heartbeat to the client every 5 seconds
+  const interval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ status: "online" }));
+    }
+  }, 5000);
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+    clearInterval(interval);
+  });
+});
 
 // Ensure folders exist
 fs.ensureDirSync(DRAFTS_DIR);
@@ -271,6 +298,19 @@ app.delete("/published/:id", (req, res) => {
 });
 
 // Start Server
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+
+/*
+In here previosly i implemented like this : 
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+But in here i's not working with web sockets. So i changed it to server.listen. 
+Now it's using an HTTP server (http.createServer(app)) explicitly to attach the WebSocket server. 
+So, using app.listen creates a separate HTTP server that isn't linked to the WebSocket server (wss).
+*/
