@@ -51,6 +51,14 @@ const api = {
   deletePublishedPost: async (id) => {
     const response = await axios.delete(`${apiBase}/published/${id}`);
     return response.data;
+  },
+  updateToBePublishedCaption: async (id, updatedData) => {
+    const response = await axios.put(`${apiBase}/to-be-published/${id}`, updatedData);
+    return response.data;
+  },
+  updateAccessTokenForAllPosts: async () => {
+    const response = await axios.post(`${apiBase}/update-access-token`);
+    return response.data;
   },  
 };
 
