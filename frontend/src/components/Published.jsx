@@ -47,7 +47,12 @@ const Published = () => {
         <ImageGallery
           posts={posts.map((post) => ({
             ...post,
-            additionalInfo: `Post ID: ${post.facebookPostId || "N/A"}`, // Show Post ID if available
+            additionalInfo: (
+              <>
+                <strong>Caption:</strong> {post.caption || "N/A"} |{" "}
+                <strong>Post ID:</strong> {post.facebookPostId || "N/A"}
+              </>
+            ),
           }))}
           actions={[
             {
@@ -58,7 +63,10 @@ const Published = () => {
           ]}
         />
       ) : (
-        <Empty style={{marginRight: "110px"}} description="No published posts available" />
+        <Empty
+          style={{ marginRight: "110px" }}
+          description="No published posts available"
+        />
       )}
       <Modal
         visible={isModalVisible}

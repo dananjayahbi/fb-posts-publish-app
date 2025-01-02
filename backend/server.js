@@ -297,6 +297,40 @@ app.delete("/published/:id", (req, res) => {
   }
 });
 
+// Update caption for a to-be-published post
+app.put("/to-be-published/:id", (req, res) => {
+  const { id } = req.params;
+  const { caption } = req.body;
+
+  const data = getPostsData();
+  const postIndex = data.toBePublished.findIndex((post) => post.id === id);
+
+  if (postIndex === -1) return res.status(404).send("Post not found.");
+
+  data.toBePublished[postIndex].caption = caption; // Update caption
+  savePostsData(data);
+
+  res.send("Caption updated successfully.");
+});
+
+// Update access token for all to-be-published posts
+app.post("/update-access-token", (req, res) => {
+  const data = getPostsData();
+  const newAccessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+
+  if (!newAccessToken) {
+    return res.status(400).send("Access token not found in .env file.");
+  }
+
+  data.toBePublished = data.toBePublished.map((post) => {
+    const updatedPublishUrl = post.publishUrl.replace(/access_token=[^&]+/, `access_token=${newAccessToken}`);
+    return { ...post, publishUrl: updatedPublishUrl };
+  });
+
+  savePostsData(data);
+  res.send("Access token updated for all posts.");
+});
+
 // Start Server
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
